@@ -45,43 +45,43 @@ local md_startChance = 0
 local md_selectChance = 0
 
 -- Walkmode Input Groups 1:[A B] 2:[Up Down Left Right] 3:[Start Select]
-local wlk_Group1Chance = 15
+local wlk_Group1Chance = 10
 local wlk_Group2Chance = 80
-local wlk_Group3Chance = 5
-local wlk_aChance = 60
-local wlk_bChance = 40
+local wlk_Group3Chance = 10
+local wlk_aChance = 80
+local wlk_bChance = 20
 local wlk_upChance = 25
 local wlk_downChance = 25
 local wlk_leftChance = 25
 local wlk_rightChance = 25
-local wlk_startChance = 50
-local wlk_selectChance = 50
+local wlk_startChance = 60
+local wlk_selectChance = 40
 
 -- Act Mode Input Groups 1:[A B] 2:[Up Down Left Right] 3:[Start Select]
-local act_Group1Chance = 80
-local act_Group2Chance = 15
-local act_Group3Chance = 5
+local act_Group1Chance = 60
+local act_Group2Chance = 30
+local act_Group3Chance = 10
 local act_aChance = 60
 local act_bChance = 40
-local act_upChance = 30
-local act_downChance = 20
-local act_leftChance = 30
-local act_rightChance = 20
-local act_startChance = 50
-local act_selectChance = 50
+local act_upChance = 32
+local act_downChance = 32
+local act_leftChance = 18
+local act_rightChance = 18
+local act_startChance = 60
+local act_selectChance = 40
 
 -- Battle Mode Input Groups Groups 1:[A B] 2:[Up Down Left Right] 3:[Start Select]
-local btl_Group1Chance = 80
-local btl_Group2Chance = 15
-local btl_Group3Chance = 5
-local btl_aChance = 75
-local btl_bChance = 25
-local btl_upChance = 35
-local btl_downChance = 15
-local btl_leftChance = 35
-local btl_rightChance = 15
-local btl_startChance = 50
-local btl_selectChance = 50
+local btl_Group1Chance = 60
+local btl_Group2Chance = 30
+local btl_Group3Chance = 10
+local btl_aChance = 80
+local btl_bChance = 20
+local btl_upChance = 32
+local btl_downChance = 18
+local btl_leftChance = 32
+local btl_rightChance = 18
+local btl_startChance = 40
+local btl_selectChance = 60
 
 
 ---------------------------------------
@@ -114,7 +114,7 @@ function GetTotalTimePlayed()
     local mm = memory.readbyte("0x" .. (ToHex(tonumber(mem_PlayerDataAddr, 16) + mem_pd_MinutesPlayedOffset)))
     local ss = memory.readbyte("0x" .. (ToHex(tonumber(mem_PlayerDataAddr, 16) + mem_pd_SecondsPlayedOffset)))
     local ff = memory.readbyte("0x" .. (ToHex(tonumber(mem_PlayerDataAddr, 16) + mem_pd_FramesPlayedOffset)))
-
+    
     return (hh .. ":" .. FormatNum(mm) .. ":" .. FormatNum(ss) .. ":" .. FormatNum(ff))
 end
 
@@ -158,8 +158,8 @@ function DrawInputDisplay()
     gui.text(173, 5, "--------", "black")
     gui.text(218, 5, "---", "black")
 
-    gui.line(150, 8, 149, 21, "black")
-    gui.line(161, 8, 160, 21, "black")
+    gui.line(150, 8, 150, 21, "black")
+    gui.line(161, 8, 161, 21, "black")
     gui.line(173, 8, 173, 21, "black")
     gui.line(184, 8, 184, 21, "black")
     gui.line(195, 8, 195, 21, "black")
@@ -178,33 +178,33 @@ function DrawInputDisplay()
     if inp_InputTable.select then gui.text(227, 5, "SL", "green") else gui.text(227, 5, "SL", "grey") end
 
     -- Chances
-    gui.text(147, 15, FormatNum(math.floor(md_aChance * (md_Group1Chance / 100))))
-    gui.text(158, 15, FormatNum(math.floor(md_bChance * (md_Group1Chance / 100))))
-    gui.text(216, 15, FormatNum(math.floor(md_startChance * (md_Group3Chance / 100))))
-    gui.text(227, 15, FormatNum(math.floor(md_selectChance * (md_Group3Chance / 100))))
+    gui.text(147, 15, FormatNum(math.floor(md_aChance * (md_Group1Chance / 100) + 0.5)))
+    gui.text(158, 15, FormatNum(math.floor(md_bChance * (md_Group1Chance / 100) + 0.5)))
+    gui.text(216, 15, FormatNum(math.floor(md_startChance * (md_Group3Chance / 100) + 0.5)))
+    gui.text(227, 15, FormatNum(math.floor(md_selectChance * (md_Group3Chance / 100) + 0.5)))
 
     -- Chances, Input Bias Colouring
     if inp_Bias ~= -1 and inp_Mode == 0 then 
         if inp_Bias == 1 then 
-            gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))), "green")
-        else gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))), "orange") end
+            gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100) + 0.5)), "green")
+        else gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100) + 0.5)), "orange") end
 
         if inp_Bias == 2 then 
-            gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))), "green")
-        else gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))), "orange") end
+            gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100) + 0.5)), "green")
+        else gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100) + 0.5)), "orange") end
 
         if inp_Bias == 3 then 
-            gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))), "green")
-        else gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))), "orange") end
+            gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100) + 0.5)), "green")
+        else gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100) + 0.5)), "orange") end
 
         if inp_Bias == 4 then 
-            gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))), "green")
-        else gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))), "orange") end
+            gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100) + 0.5)), "green")
+        else gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100) + 0.5)), "orange") end
     else 
-        gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))))
-        gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))))
-        gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))))
-        gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))))
+        gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100) + 0.5)))
+        gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100) + 0.5)))
+        gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100) + 0.5)))
+        gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100) + 0.5)))
     end
 end
 
@@ -289,29 +289,29 @@ function HandleBias()
     -- Up Bias
     elseif inp_Bias == 1 then 
         wlk_upChance = 30
-        wlk_downChance = 22
-        wlk_leftChance = 24
-        wlk_rightChance = 24
+        wlk_downChance = 20
+        wlk_leftChance = 25
+        wlk_rightChance = 25
 
     -- Down Bias
     elseif inp_Bias == 2 then 
-        wlk_upChance = 22
+        wlk_upChance = 20
         wlk_downChance = 30
-        wlk_leftChance = 24
-        wlk_rightChance = 24
+        wlk_leftChance = 25
+        wlk_rightChance = 25
 
     -- Left Bias
     elseif inp_Bias == 3 then 
-        wlk_upChance = 24
-        wlk_downChance = 24
+        wlk_upChance = 25
+        wlk_downChance = 25
         wlk_leftChance = 30
-        wlk_rightChance = 22
+        wlk_rightChance = 20
 
     -- Right Bias
     elseif inp_Bias == 4 then 
-        wlk_upChance = 24
-        wlk_downChance = 24
-        wlk_leftChance = 22
+        wlk_upChance = 25
+        wlk_downChance = 25
+        wlk_leftChance = 20
         wlk_rightChance = 30
     end
 end
