@@ -84,6 +84,20 @@ local btl_startChance = 50
 local btl_selectChance = 50
 
 
+---------------------------------------
+-- HELPER FUNCTIONS -------------------
+---------------------------------------
+
+-- Converts a Decimal (string) into a Hex
+function ToHex(str)
+    return string.format("%x", tostring(str))
+end
+
+-- Formats Numbers to have leading 0's
+function FormatNum(num)
+    if num < 10 then return (0 .. num) else return num end
+end
+
 
 ---------------------------------------
 -- GET SHIT FROM MEMORY FUNCTIONS -----
@@ -114,6 +128,192 @@ function GetPlayerName()
     end
 
     pd_PlayerName = name
+end
+
+
+---------------------------------------
+-- DISPLAY THINGS ---------------------
+---------------------------------------
+
+-- Set Chances for the Display
+function UpdateDisplayChances(g1, g2, g3, a, b, up, down, left, right, start, sel)
+    md_Group1Chance = g1
+    md_Group2Chance = g2
+    md_Group3Chance = g3
+    md_aChance = a
+    md_bChance = b
+    md_upChance = up
+    md_downChance = down
+    md_leftChance = left
+    md_rightChance = right
+    md_startChance = start
+    md_selectChance = sel
+end
+
+-- Displays Button Inputs
+function DrawInputDisplay()
+
+    -- Background Lines
+    gui.text(150, 5, "---", "black") 
+    gui.text(173, 5, "--------", "black")
+    gui.text(218, 5, "---", "black")
+
+    gui.line(150, 8, 149, 21, "black")
+    gui.line(161, 8, 160, 21, "black")
+    gui.line(173, 8, 173, 21, "black")
+    gui.line(184, 8, 184, 21, "black")
+    gui.line(195, 8, 195, 21, "black")
+    gui.line(206, 8, 206, 21, "black")
+    gui.line(219, 8, 219, 21, "black")
+    gui.line(230, 8, 230, 21, "black")
+
+    -- Inputs
+    if inp_InputTable.A then gui.text(149, 5, "A", "green") else gui.text(149, 5, "A", "grey") end
+    if inp_InputTable.B then gui.text(160, 5, "B", "green") else gui.text(160, 5, "B", "grey") end
+    if inp_InputTable.up then gui.text(172, 5, "U", "green") else gui.text(172, 5, "U", "grey") end
+    if inp_InputTable.down then gui.text(183, 5, "D", "green") else gui.text(183, 5, "D", "grey") end
+    if inp_InputTable.left then gui.text(194, 5, "L", "green") else gui.text(194, 5, "L", "grey") end
+    if inp_InputTable.right then gui.text(205, 5, "R", "green") else gui.text(205, 5, "R", "grey") end
+    if inp_InputTable.start then gui.text(216, 5, "ST", "green") else gui.text(216, 5, "ST", "grey") end
+    if inp_InputTable.select then gui.text(227, 5, "SL", "green") else gui.text(227, 5, "SL", "grey") end
+
+    -- Chances
+    gui.text(147, 15, FormatNum(math.floor(md_aChance * (md_Group1Chance / 100))))
+    gui.text(158, 15, FormatNum(math.floor(md_bChance * (md_Group1Chance / 100))))
+    gui.text(216, 15, FormatNum(math.floor(md_startChance * (md_Group3Chance / 100))))
+    gui.text(227, 15, FormatNum(math.floor(md_selectChance * (md_Group3Chance / 100))))
+
+    -- Chances, Input Bias Colouring
+    if inp_Bias ~= -1 and inp_Mode == 0 then 
+        if inp_Bias == 1 then 
+            gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))), "green")
+        else gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))), "orange") end
+
+        if inp_Bias == 2 then 
+            gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))), "green")
+        else gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))), "orange") end
+
+        if inp_Bias == 3 then 
+            gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))), "green")
+        else gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))), "orange") end
+
+        if inp_Bias == 4 then 
+            gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))), "green")
+        else gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))), "orange") end
+    else 
+        gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))))
+        gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))))
+        gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))))
+        gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))))
+    end
+end
+
+-- Displays current Input Mode
+function DrawModeDisplay()
+    local text
+    
+    if inp_Mode == 0 then text = "WLK" 
+    elseif inp_Mode == 1 then text = "ACT" 
+    elseif inp_Mode == 2 then text = "BTL" end
+
+    gui.text(130, 15, text)
+end
+
+-- Displays Bias Mode Information
+function DrawBiasDisplay() 
+    local biastext
+
+    if inp_Bias == 1 then biastext = "   WLK Bias - Up"
+    elseif inp_Bias == 2 then biastext = " WLK Bias - Down"
+    elseif inp_Bias == 3 then biastext = " WLK Bias - Left"
+    elseif inp_Bias == 4 then biastext = "WLK Bias - Right"
+    else biastext = " WLK Bias - None" end
+
+    gui.text(171, 25, biastext)
+end
+
+-- Draws General Information such as PlayerName, Total Time, etc.
+function DrawInformation()
+    gui.text(5, 5, pd_PlayerName .. " " .. GetTotalTimePlayed())
+    gui.text(5, 15, inp_TotalInputs .. " (" .. inp_RepeatCount .. ")")
+end
+
+
+---------------------------------------
+-- SELECT INPUT MODES AND BIAS --------
+---------------------------------------
+
+function HandleInputs()
+
+    -- Input Mode: 0 = Walk Mode (Overworld), 1 = Act Mode (Menu) 2 = Battle Mode (Battles)
+    local scenetype = memory.readbyte(mem_SceneTypeAddr)
+
+    if scenetype == 0xA0 then 
+        inp_Mode = 1
+    elseif scenetype == 0x1E then
+        inp_Mode = 2
+    else inp_Mode = 0 end
+
+    local rng = math.random(0, 100)
+
+    -- Decide whether to repeat Input or generate a new one
+    if rng < inp_RepeatChance and inp_TotalInputs ~= 0 then 
+        inp_InputTable = inp_LastInputTable
+        inp_RepeatCount = inp_RepeatCount + 1
+    else
+        if inp_Mode == 0 then inp_InputTable = WalkModeInput() 
+        elseif inp_Mode == 1 then inp_InputTable = ActModeInput() 
+        elseif inp_Mode == 2 then inp_InputTable = BattleModeInput() end
+
+        inp_RepeatCount = 0
+    end
+end
+
+function HandleBias()
+
+    -- Keyboard Inputs for Bias
+    local keyinputs = input.get()
+    if keyinputs["W"] then inp_Bias = 1 end
+    if keyinputs["A"] then inp_Bias = 3 end
+    if keyinputs["S"] then inp_Bias = 2 end
+    if keyinputs["D"] then inp_Bias = 4 end
+    if keyinputs["Q"] or keyinputs["E"] or keyinputs["R"] then inp_Bias = -1 end
+
+    -- No Bias
+    if inp_Bias == -1 then 
+        wlk_upChance = 25
+        wlk_downChance = 25
+        wlk_leftChance = 25
+        wlk_rightChance = 25
+
+    -- Up Bias
+    elseif inp_Bias == 1 then 
+        wlk_upChance = 30
+        wlk_downChance = 22
+        wlk_leftChance = 24
+        wlk_rightChance = 24
+
+    -- Down Bias
+    elseif inp_Bias == 2 then 
+        wlk_upChance = 22
+        wlk_downChance = 30
+        wlk_leftChance = 24
+        wlk_rightChance = 24
+
+    -- Left Bias
+    elseif inp_Bias == 3 then 
+        wlk_upChance = 24
+        wlk_downChance = 24
+        wlk_leftChance = 30
+        wlk_rightChance = 22
+
+    -- Right Bias
+    elseif inp_Bias == 4 then 
+        wlk_upChance = 24
+        wlk_downChance = 24
+        wlk_leftChance = 22
+        wlk_rightChance = 30
+    end
 end
 
 
@@ -257,207 +457,6 @@ function BattleModeInput()
     UpdateDisplayChances(btl_Group1Chance, btl_Group2Chance, btl_Group3Chance, btl_aChance, btl_bChance, btl_upChance, btl_downChance, btl_leftChance, btl_rightChance, btl_startChance, btl_selectChance)
 
     return inputtable
-end
-
-
----------------------------------------
--- DISPLAY THINGS ---------------------
----------------------------------------
-
--- Set Chances for the Display
-function UpdateDisplayChances(g1, g2, g3, a, b, up, down, left, right, start, sel)
-    md_Group1Chance = g1
-    md_Group2Chance = g2
-    md_Group3Chance = g3
-    md_aChance = a
-    md_bChance = b
-    md_upChance = up
-    md_downChance = down
-    md_leftChance = left
-    md_rightChance = right
-    md_startChance = start
-    md_selectChance = sel
-end
-
--- Displays Button Inputs
-function DrawInputDisplay()
-
-    -- Background Lines
-    gui.text(150, 5, "---", "black") 
-    gui.text(173, 5, "--------", "black")
-    gui.text(218, 5, "---", "black")
-
-    gui.line(150, 8, 149, 21, "black")
-    gui.line(161, 8, 160, 21, "black")
-    gui.line(173, 8, 173, 21, "black")
-    gui.line(184, 8, 184, 21, "black")
-    gui.line(195, 8, 195, 21, "black")
-    gui.line(206, 8, 206, 21, "black")
-    gui.line(219, 8, 219, 21, "black")
-    gui.line(230, 8, 230, 21, "black")
-
-    -- Inputs
-    if inp_InputTable.A then gui.text(149, 5, "A", "green") else gui.text(149, 5, "A", "grey") end
-    if inp_InputTable.B then gui.text(160, 5, "B", "green") else gui.text(160, 5, "B", "grey") end
-    if inp_InputTable.up then gui.text(172, 5, "U", "green") else gui.text(172, 5, "U", "grey") end
-    if inp_InputTable.down then gui.text(183, 5, "D", "green") else gui.text(183, 5, "D", "grey") end
-    if inp_InputTable.left then gui.text(194, 5, "L", "green") else gui.text(194, 5, "L", "grey") end
-    if inp_InputTable.right then gui.text(205, 5, "R", "green") else gui.text(205, 5, "R", "grey") end
-    if inp_InputTable.start then gui.text(216, 5, "ST", "green") else gui.text(216, 5, "ST", "grey") end
-    if inp_InputTable.select then gui.text(227, 5, "SL", "green") else gui.text(227, 5, "SL", "grey") end
-
-    -- Chances
-    gui.text(147, 15, FormatNum(math.floor(md_aChance * (md_Group1Chance / 100))))
-    gui.text(158, 15, FormatNum(math.floor(md_bChance * (md_Group1Chance / 100))))
-    gui.text(216, 15, FormatNum(math.floor(md_startChance * (md_Group3Chance / 100))))
-    gui.text(227, 15, FormatNum(math.floor(md_selectChance * (md_Group3Chance / 100))))
-
-    -- Chances, Input Bias Colouring
-    if inp_Bias ~= -1 and inp_Mode == 0 then 
-        if inp_Bias == 1 then 
-            gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))), "green")
-        else gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))), "orange") end
-
-        if inp_Bias == 2 then 
-            gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))), "green")
-        else gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))), "orange") end
-
-        if inp_Bias == 3 then 
-            gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))), "green")
-        else gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))), "orange") end
-
-        if inp_Bias == 4 then 
-            gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))), "green")
-        else gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))), "orange") end
-    else 
-        gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100))))
-        gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100))))
-        gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100))))
-        gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100))))
-    end
-end
-
--- Displays current Input Mode
-function DrawModeDisplay()
-    local text
-    
-    if inp_Mode == 0 then text = "WLK" 
-    elseif inp_Mode == 1 then text = "ACT" 
-    elseif inp_Mode == 2 then text = "BTL" end
-
-    gui.text(130, 15, text)
-end
-
--- Displays Bias Mode Information
-function DrawBiasDisplay() 
-    local biastext
-
-    if inp_Bias == 1 then biastext = "   WLK Bias - Up"
-    elseif inp_Bias == 2 then biastext = " WLK Bias - Down"
-    elseif inp_Bias == 3 then biastext = " WLK Bias - Left"
-    elseif inp_Bias == 4 then biastext = "WLK Bias - Right"
-    else biastext = " WLK Bias - None" end
-
-    gui.text(171, 25, biastext)
-end
-
--- Draws General Information such as PlayerName, Total Time, etc.
-function DrawInformation()
-    gui.text(5, 5, pd_PlayerName .. " " .. GetTotalTimePlayed())
-    gui.text(5, 15, inp_TotalInputs .. " (" .. inp_RepeatCount .. ")")
-end
-
-
----------------------------------------
--- HELPER FUNCTIONS -------------------
----------------------------------------
-
--- Converts a Decimal (string) into a Hex
-function ToHex(str)
-    return string.format("%x", tostring(str))
-end
-
--- Formats Numbers to have leading 0's
-function FormatNum(num)
-    if num < 10 then return (0 .. num) else return num end
-end
-
-
----------------------------------------
--- SELECT INPUT MODES AND BIAS --------
----------------------------------------
-
-function HandleInputs()
-
-    -- Input Mode: 0 = Walk Mode (Overworld), 1 = Act Mode (Menu) 2 = Battle Mode (Battles)
-    local scenetype = memory.readbyte(mem_SceneTypeAddr)
-
-    if scenetype == 0xA0 then 
-        inp_Mode = 1
-    elseif scenetype == 0x1E then
-        inp_Mode = 2
-    else inp_Mode = 0 end
-
-    local rng = math.random(0, 100)
-
-    -- Decide whether to repeat Input or generate a new one
-    if rng < inp_RepeatChance and inp_TotalInputs ~= 0 then 
-        inp_InputTable = inp_LastInputTable
-        inp_RepeatCount = inp_RepeatCount + 1
-    else
-        if inp_Mode == 0 then inp_InputTable = WalkModeInput() 
-        elseif inp_Mode == 1 then inp_InputTable = ActModeInput() 
-        elseif inp_Mode == 2 then inp_InputTable = BattleModeInput() end
-
-        inp_RepeatCount = 0
-    end
-end
-
-function HandleBias()
-
-    -- Keyboard Inputs for Bias
-    local keyinputs = input.get()
-    if keyinputs["W"] then inp_Bias = 1 end
-    if keyinputs["A"] then inp_Bias = 3 end
-    if keyinputs["S"] then inp_Bias = 2 end
-    if keyinputs["D"] then inp_Bias = 4 end
-    if keyinputs["Q"] or keyinputs["E"] or keyinputs["R"] then inp_Bias = -1 end
-
-    -- No Bias
-    if inp_Bias == -1 then 
-        wlk_upChance = 25
-        wlk_downChance = 25
-        wlk_leftChance = 25
-        wlk_rightChance = 25
-
-    -- Up Bias
-    elseif inp_Bias == 1 then 
-        wlk_upChance = 30
-        wlk_downChance = 22
-        wlk_leftChance = 24
-        wlk_rightChance = 24
-
-    -- Down Bias
-    elseif inp_Bias == 2 then 
-        wlk_upChance = 22
-        wlk_downChance = 30
-        wlk_leftChance = 24
-        wlk_rightChance = 24
-
-    -- Left Bias
-    elseif inp_Bias == 3 then 
-        wlk_upChance = 24
-        wlk_downChance = 24
-        wlk_leftChance = 30
-        wlk_rightChance = 22
-
-    -- Right Bias
-    elseif inp_Bias == 4 then 
-        wlk_upChance = 24
-        wlk_downChance = 24
-        wlk_leftChance = 22
-        wlk_rightChance = 30
-    end
 end
 
 
