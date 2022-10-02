@@ -1,5 +1,5 @@
 # vbascr-pkmn-random-inputs
-A (vba-rr) Pokemon Emerald lua script which, essentially, presses random buttons to play the game while you watch.
+A (vba-rr) Pokemon Emerald lua script which, essentially, presses (weighted) random buttons to play the game while you watch.
 
 # Features
 - Directional Bias Mode
