@@ -5,6 +5,26 @@
 
 -- Made by Nyuuh 10/2022
 
+-- Charset used by Emerald
+local charset = {
+    ' ', 'À', 'Á', 'Â', 'Ç', 'È', 'É', 'Ê', 'Ë', 'Ì', ' ', 'Î', 'Ï', 'Ò', 'Ó', 'Ô',
+    'Œ', 'Ù', 'Ú', 'Û', 'Ñ', 'ß', 'à', 'á', ' ', 'ç', 'è', 'é', 'ê', 'ë', 'ì', ' ',
+    'î', 'ï', 'ò', 'ó', 'ô', 'œ', 'ù', 'ú', 'û', 'ñ', 'º', 'ª', 'ᵉʳ', '&', '+', ' ',
+    ' ', ' ', ' ', ' ', 'Lv', '=', ';', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+    ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+    '▯', '¿', '¡', 'PK', 'MN', 'PO', 'Ké', 'x', 'x', 'x', 'Í', '%', '(', ')', ' ', ' ',
+    ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'â', ' ', ' ', ' ', ' ', ' ', ' ', 'í',
+    ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '⬆', '⬇', '⬅', '➡', '*', '*', '*',
+    '*', '*', '*', '*', 'ᵉ', '<', '>', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+    ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+    'ʳᵉ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '?', '.', '-', '・',
+    '...', '“', '”', '‘', '’', '♂', '♀', 'pk$', ',', '×', '/', 'A', 'B', 'C', 'D', 'E',
+    'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
+    'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+    'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '▶',
+    ':', 'Ä', 'Ö', 'Ü', 'ä', 'ö', 'ü', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '
+}
+
 local actionLength = 10
 local saveGameFrequency = 10000
 local saveGameQueued = false
@@ -35,6 +55,12 @@ local mem_CanWalkOnOverworldAddr = 0x03000F2C
 local mem_SceneTypeAddr = 0x02021686
 local mem_MenuSelectionAddr = 0x0203760E
 local mem_MenuSelectionAmountAddr = 0x0203760F
+
+local mem_BackgroundPaletteAddr = 0x02037714
+local mem_BackgroundPalette2Addr = 0x02037B14
+local mem_ObjectPaletteAddr = 0x02037914
+local mem_ObjectPalette2Addr = 0x02037D14
+local nameInputPaletteValue = 0x6D
 
 local pd_PlayerName = ""
 
@@ -93,6 +119,7 @@ local btl_selectChance = 60
 -- Etc
 local savingAttemptActive = false
 local savingAttemptProcessText = ""
+local specialRuleText = ""
 
 ---------------------------------------
 -- HELPER FUNCTIONS -------------------
@@ -128,13 +155,13 @@ function GetTotalTimePlayed()
     return (hh .. ":" .. FormatNum(mm) .. ":" .. FormatNum(ss) .. ":" .. FormatNum(ff))
 end
 
--- Gets the PlayerName from Memory, Ascii: 65 is A, Pkmn: BB/187 is A, Offset is -122
+-- Gets the PlayerName from Memory
 function GetPlayerName()
     local name = ""
     local namedec = memory.readbyterange("0x" .. (ToHex(tonumber(mem_PlayerDataAddr, 16) + mem_pd_PlayerNameOffset)), 8)
 
     for i = 1,8,1 do
-        if namedec[i] ~= 255 then name = name .. string.char(namedec[i] - 122) end
+        if namedec[i] ~= 255 then name = name .. charset[namedec[i] + 1] end
     end
 
     pd_PlayerName = name
@@ -257,6 +284,12 @@ function DrawGameSavingDisplay()
     end
 end
 
+function DrawSpecialRuleDisplay()
+    if specialRuleText == "" then return end
+
+    gui.text(5, 150, "> " .. specialRuleText)
+end
+
 ---------------------------------------
 -- SELECT INPUT MODES AND BIAS --------
 ---------------------------------------
@@ -284,6 +317,20 @@ function HandleInputs()
         elseif inp_Mode == 2 then inp_InputTable = BattleModeInput() end
 
         inp_RepeatCount = 0
+    end
+end
+
+function HandleSpecialInputRules()
+    local rng = math.random(0, 100)
+
+    -- Input Field Rules (needs better determination, basing it off the Background Palette is kinda dumb?)
+    if memory.readbyte(mem_BackgroundPaletteAddr) ~= 0x00 then
+        if memory.readbyte(mem_BackgroundPaletteAddr) == nameInputPaletteValue and memory.readbyte(mem_BackgroundPalette2Addr) == nameInputPaletteValue then
+            specialRuleText = "Input Field Rule"
+            
+            inp_InputTable.start = false
+            if inp_InputTable.B == true and rng < 75 then inp_InputTable.B = false end
+        end
     end
 end
 
@@ -517,6 +564,7 @@ end
 
 -- Creates an Ingame Save
 function CreateIngameSave()
+    GetPlayerName() -- Helps updating the PlayerName at the Start of the Game
     vba.print("Attempting to create an ingame Save...")
     savingAttemptActive = true
 
@@ -572,6 +620,7 @@ end
 ---------------------------------------
 
 vba.registerbefore(DrawGameSavingDisplay)
+vba.registerbefore(DrawSpecialRuleDisplay)
 
 FindPlayerData()
 GetPlayerName()
@@ -580,8 +629,11 @@ LoadInputs()
 while true do
     if savingAttemptActive then return end
 
+    specialRuleText = ""
+
     -- Inputs
     HandleInputs()
+    HandleSpecialInputRules()
     HandleBias()
 
     if saveGameQueued then
