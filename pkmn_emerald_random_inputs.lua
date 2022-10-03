@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 -- Useful Links
 -- https://tasvideos.org/EmulatorResources/VBA/LuaScriptingFunctions
 -- https://github.com/DevonStudios/LuaScripts
@@ -5,6 +6,10 @@
 -- Made by Nyuuh 10/2022
 
 local actionLength = 10
+local saveGameFrequency = 10000
+local saveGameQueued = false
+local saveInputsFrequency = 10000
+
 math.randomseed(os.time())
 
 -- Input
@@ -28,6 +33,8 @@ local mem_pd_FramesPlayedOffset = 0x12
 local mem_OverworldWalkAddr = 0x02037372
 local mem_CanWalkOnOverworldAddr = 0x03000F2C
 local mem_SceneTypeAddr = 0x02021686
+local mem_MenuSelectionAddr = 0x0203760E
+local mem_MenuSelectionAmountAddr = 0x0203760F
 
 local pd_PlayerName = ""
 
@@ -83,6 +90,9 @@ local btl_rightChance = 18
 local btl_startChance = 40
 local btl_selectChance = 60
 
+-- Etc
+local savingAttemptActive = false
+local savingAttemptProcessText = ""
 
 ---------------------------------------
 -- HELPER FUNCTIONS -------------------
@@ -114,7 +124,7 @@ function GetTotalTimePlayed()
     local mm = memory.readbyte("0x" .. (ToHex(tonumber(mem_PlayerDataAddr, 16) + mem_pd_MinutesPlayedOffset)))
     local ss = memory.readbyte("0x" .. (ToHex(tonumber(mem_PlayerDataAddr, 16) + mem_pd_SecondsPlayedOffset)))
     local ff = memory.readbyte("0x" .. (ToHex(tonumber(mem_PlayerDataAddr, 16) + mem_pd_FramesPlayedOffset)))
-    
+
     return (hh .. ":" .. FormatNum(mm) .. ":" .. FormatNum(ss) .. ":" .. FormatNum(ff))
 end
 
@@ -154,7 +164,7 @@ end
 function DrawInputDisplay()
 
     -- Background Lines
-    gui.text(150, 5, "---", "black") 
+    gui.text(150, 5, "---", "black")
     gui.text(173, 5, "--------", "black")
     gui.text(218, 5, "---", "black")
 
@@ -184,23 +194,23 @@ function DrawInputDisplay()
     gui.text(227, 15, FormatNum(math.floor(md_selectChance * (md_Group3Chance / 100) + 0.5)))
 
     -- Chances, Input Bias Colouring
-    if inp_Bias ~= -1 and inp_Mode == 0 then 
-        if inp_Bias == 1 then 
+    if inp_Bias ~= -1 and inp_Mode == 0 then
+        if inp_Bias == 1 then
             gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100) + 0.5)), "green")
         else gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100) + 0.5)), "orange") end
 
-        if inp_Bias == 2 then 
+        if inp_Bias == 2 then
             gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100) + 0.5)), "green")
         else gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100) + 0.5)), "orange") end
 
-        if inp_Bias == 3 then 
+        if inp_Bias == 3 then
             gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100) + 0.5)), "green")
         else gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100) + 0.5)), "orange") end
 
-        if inp_Bias == 4 then 
+        if inp_Bias == 4 then
             gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100) + 0.5)), "green")
         else gui.text(203, 15, FormatNum(math.floor(md_rightChance * (md_Group2Chance / 100) + 0.5)), "orange") end
-    else 
+    else
         gui.text(170, 15, FormatNum(math.floor(md_upChance * (md_Group2Chance / 100) + 0.5)))
         gui.text(181, 15, FormatNum(math.floor(md_downChance * (md_Group2Chance / 100) + 0.5)))
         gui.text(192, 15, FormatNum(math.floor(md_leftChance * (md_Group2Chance / 100) + 0.5)))
@@ -211,16 +221,16 @@ end
 -- Displays current Input Mode
 function DrawModeDisplay()
     local text
-    
-    if inp_Mode == 0 then text = "WLK" 
-    elseif inp_Mode == 1 then text = "ACT" 
+
+    if inp_Mode == 0 then text = "WLK"
+    elseif inp_Mode == 1 then text = "ACT"
     elseif inp_Mode == 2 then text = "BTL" end
 
     gui.text(130, 15, text)
 end
 
 -- Displays Bias Mode Information
-function DrawBiasDisplay() 
+function DrawBiasDisplay()
     local biastext
 
     if inp_Bias == 1 then biastext = "   WLK Bias - Up"
@@ -236,8 +246,16 @@ end
 function DrawInformation()
     gui.text(5, 5, pd_PlayerName .. " " .. GetTotalTimePlayed())
     gui.text(5, 15, inp_TotalInputs .. " (" .. inp_RepeatCount .. ")")
+
+    if saveGameQueued then gui.text(5, 25, "GAME SAVE QUEUED", "orange") end
 end
 
+function DrawGameSavingDisplay()
+    if savingAttemptActive then 
+        gui.text(130, 5, "ATTEMPTING TO SAVE GAME", "orange")
+        gui.text(135, 15, "> " .. savingAttemptProcessText, "orange")
+    end
+end
 
 ---------------------------------------
 -- SELECT INPUT MODES AND BIAS --------
@@ -248,7 +266,7 @@ function HandleInputs()
     -- Input Mode: 0 = Walk Mode (Overworld), 1 = Act Mode (Menu) 2 = Battle Mode (Battles)
     local scenetype = memory.readbyte(mem_SceneTypeAddr)
 
-    if scenetype == 0xA0 then 
+    if scenetype == 0xA0 then
         inp_Mode = 1
     elseif scenetype == 0x1E then
         inp_Mode = 2
@@ -257,12 +275,12 @@ function HandleInputs()
     local rng = math.random(0, 100)
 
     -- Decide whether to repeat Input or generate a new one
-    if rng < inp_RepeatChance and inp_TotalInputs ~= 0 then 
+    if rng < inp_RepeatChance and inp_TotalInputs ~= 0 then
         inp_InputTable = inp_LastInputTable
         inp_RepeatCount = inp_RepeatCount + 1
     else
-        if inp_Mode == 0 then inp_InputTable = WalkModeInput() 
-        elseif inp_Mode == 1 then inp_InputTable = ActModeInput() 
+        if inp_Mode == 0 then inp_InputTable = WalkModeInput()
+        elseif inp_Mode == 1 then inp_InputTable = ActModeInput()
         elseif inp_Mode == 2 then inp_InputTable = BattleModeInput() end
 
         inp_RepeatCount = 0
@@ -280,35 +298,35 @@ function HandleBias()
     if keyinputs["Q"] or keyinputs["E"] or keyinputs["R"] then inp_Bias = -1 end
 
     -- No Bias
-    if inp_Bias == -1 then 
+    if inp_Bias == -1 then
         wlk_upChance = 25
         wlk_downChance = 25
         wlk_leftChance = 25
         wlk_rightChance = 25
 
     -- Up Bias
-    elseif inp_Bias == 1 then 
+    elseif inp_Bias == 1 then
         wlk_upChance = 30
         wlk_downChance = 20
         wlk_leftChance = 25
         wlk_rightChance = 25
 
     -- Down Bias
-    elseif inp_Bias == 2 then 
+    elseif inp_Bias == 2 then
         wlk_upChance = 20
         wlk_downChance = 30
         wlk_leftChance = 25
         wlk_rightChance = 25
 
     -- Left Bias
-    elseif inp_Bias == 3 then 
+    elseif inp_Bias == 3 then
         wlk_upChance = 25
         wlk_downChance = 25
         wlk_leftChance = 30
         wlk_rightChance = 20
 
     -- Right Bias
-    elseif inp_Bias == 4 then 
+    elseif inp_Bias == 4 then
         wlk_upChance = 25
         wlk_downChance = 25
         wlk_leftChance = 20
@@ -330,17 +348,17 @@ function WalkModeInput()
     inputtable = joypad.get(1)
 
     -- A/B
-    if rng1 < wlk_Group1Chance then 
+    if rng1 < wlk_Group1Chance then
 
-        if rng2 < wlk_aChance then 
+        if rng2 < wlk_aChance then
             inputtable.A = true
-        elseif rng2 < wlk_aChance + wlk_bChance then 
-            inputtable.B = true 
+        elseif rng2 < wlk_aChance + wlk_bChance then
+            inputtable.B = true
         end
 
     -- Up Down Left Right
     elseif rng1 < wlk_Group1Chance + wlk_Group2Chance then
-        
+
         if rng2 < wlk_upChance then
             inputtable.up = true
         elseif rng2 < wlk_upChance + wlk_downChance then
@@ -376,17 +394,17 @@ function ActModeInput()
     inputtable = joypad.get(1)
 
     -- A/B
-    if rng1 < act_Group1Chance then 
+    if rng1 < act_Group1Chance then
 
-        if rng2 < act_aChance then 
+        if rng2 < act_aChance then
             inputtable.A = true
-        elseif rng2 < act_aChance + act_bChance then 
-            inputtable.B = true 
+        elseif rng2 < act_aChance + act_bChance then
+            inputtable.B = true
         end
 
     -- Up Down Left Right
     elseif rng1 < act_Group1Chance + act_Group2Chance then
-        
+
         if rng2 < act_upChance then
             inputtable.up = true
         elseif rng2 < act_upChance + act_downChance then
@@ -422,17 +440,17 @@ function BattleModeInput()
     inputtable = joypad.get(1)
 
     -- A/B
-    if rng1 < btl_Group1Chance then 
+    if rng1 < btl_Group1Chance then
 
-        if rng2 < btl_aChance then 
+        if rng2 < btl_aChance then
             inputtable.A = true
-        elseif rng2 < btl_aChance + btl_bChance then 
-            inputtable.B = true 
+        elseif rng2 < btl_aChance + btl_bChance then
+            inputtable.B = true
         end
 
     -- Up Down Left Right
     elseif rng1 < btl_Group1Chance + btl_Group2Chance then
-        
+
         if rng2 < btl_upChance then
             inputtable.up = true
         elseif rng2 < btl_upChance + btl_downChance then
@@ -497,46 +515,118 @@ function CreateSaveState()
     savestate.save(savestate.create(10))
 end
 
+-- Creates an Ingame Save
+function CreateIngameSave()
+    vba.print("Attempting to create an ingame Save...")
+    savingAttemptActive = true
+
+    -- Get current Menu Selection to reapply later
+    local currentmenuselection = memory.readbyte(mem_MenuSelectionAddr)
+
+    -- Set Menu Selection to Save
+    memory.writebyte("0x" .. ToHex(mem_MenuSelectionAddr), memory.readbyte(mem_MenuSelectionAmountAddr) - 3)
+    inp_InputTable = {}
+
+    -- Open Menu
+    local cnt = 0
+    savingAttemptProcessText = "ATTEMPTING TO OPEN MENU"
+
+    while memory.readbyte(mem_CanWalkOnOverworldAddr) == 00 and cnt < 20 do
+        cnt = cnt + 1
+
+        joypad.set(1, {A = false, B = false, up = false, down = false, left = false, right = false, start = true, select = false, R = false, L = false})
+        for i = 1, actionLength do vba.frameadvance() end
+
+        joypad.set(1, {A = false, B = false, up = false, down = false, left = false, right = false, start = false, select = false, R = false, L = false})
+        for i = 1, actionLength do vba.frameadvance() end
+    end
+
+    for i = 1, actionLength do vba.frameadvance() end
+
+    -- Update Display Information
+    if memory.readbyte(mem_CanWalkOnOverworldAddr) == 00 then
+        savingAttemptProcessText = "OPENING MENU FAILED"
+        for i = 1, 200 do vba.frameadvance() end 
+    else savingAttemptProcessText = "NAVIGATING MENU" end
+
+    -- Save by pressing A
+    while memory.readbyte(mem_CanWalkOnOverworldAddr) == 01 do
+        joypad.set(1, {A = true, B = false, up = false, down = false, left = false, right = false, start = false, select = false, R = false, L = false})
+        for i = 1, actionLength do vba.frameadvance() end
+
+        joypad.set(1, {A = false, B = false, up = false, down = false, left = false, right = false, start = false, select = false, R = false, L = false})
+        for i = 1, actionLength do vba.frameadvance() end
+    end
+
+    -- Reset Menu Selection
+    memory.writebyte("0x" .. ToHex(mem_MenuSelectionAddr), currentmenuselection)
+
+    saveGameQueued = false
+    savingAttemptActive = false
+    savingAttemptProcessText = ""
+end
+
 
 ---------------------------------------
 -- MAIN -------------------------------
 ---------------------------------------
+
+vba.registerbefore(DrawGameSavingDisplay)
 
 FindPlayerData()
 GetPlayerName()
 LoadInputs()
 
 while true do
+    if savingAttemptActive then return end
 
     -- Inputs
     HandleInputs()
     HandleBias()
 
-    -- Progress Loop
-    for i = 1, actionLength do 
+    if saveGameQueued then
+        if inp_Mode == 0 and memory.readbyte(mem_CanWalkOnOverworldAddr) == 00 then CreateIngameSave() end
+    end
 
-        -- Set Inputs
-        joypad.set(1, inp_InputTable) 
+    -- Decide whether we should save or continue
+    if (inp_TotalInputs % saveGameFrequency == 0) then
 
-        -- Advance to next Frame (apply Inputs)
-        vba.frameadvance() 
+        -- Check if we are able to save in current Situation, otherwise Queue
+        if inp_Mode == 0 and memory.readbyte(mem_CanWalkOnOverworldAddr) == 00 then
+            CreateIngameSave()
+        else saveGameQueued = true end
 
-        -- Find PlayerData again because that one's a slippery Bastard
-        FindPlayerData()
+        -- Increase Inputs to break loop
+        inp_TotalInputs = inp_TotalInputs + 1
+    else
 
-        -- Draw Texts and Information
-        DrawInformation()
-        DrawInputDisplay()
-        DrawModeDisplay()
-        DrawBiasDisplay()
+        -- Progress Loop
+        for i = 1, actionLength do
+
+            -- Set Inputs
+            joypad.set(1, inp_InputTable)
+
+            -- Advance to next Frame (apply Inputs)
+            vba.frameadvance()
+
+            -- Find PlayerData again because that one's a slippery Bastard
+            FindPlayerData()
+
+            -- Draw Texts and Information
+            DrawInformation()
+            DrawInputDisplay()
+            DrawModeDisplay()
+            DrawBiasDisplay()
+        end
+
+        inp_LastInputTable = inp_InputTable
+        inp_TotalInputs = inp_TotalInputs + 1
     end
 
     -- Save Input Amounts
-    if inp_TotalInputs % 10000 == 0 then
+    if inp_TotalInputs % saveInputsFrequency == 0 then
         SaveInputs()
         --CreateSaveState()
     end
 
-    inp_LastInputTable = inp_InputTable
-    inp_TotalInputs = inp_TotalInputs + 1
 end
