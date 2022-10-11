@@ -80,7 +80,7 @@ end
 ---------------------------------------
 
 -- selects a random input for walk mode (WLK)
-function WalkModeInput()
+function export.WalkModeInput()
     local rng1 = math.random(0, 100)
     local rng2 = math.random(0, 100)
 
@@ -123,7 +123,7 @@ function WalkModeInput()
 end
 
 -- selects a random input for act mode (ACT)
-function ActModeInput()
+function export.ActModeInput()
     local rng1 = math.random(0, 100)
     local rng2 = math.random(0, 100)
 
@@ -166,7 +166,7 @@ function ActModeInput()
 end
 
 -- selects a random input for battle mode (BTL)
-function BattleModeInput()
+function export.BattleModeInput()
     local rng1 = math.random(0, 100)
     local rng2 = math.random(0, 100)
 
