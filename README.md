@@ -1,5 +1,10 @@
 # pkmn-random-inputs
-A (vba-rr) Pokemon Emerald lua script which, essentially, presses (weighted) random buttons to play the game while you watch.
+A (vba-rr) generation specific Pokemon lua script which, essentially, presses (weighted) random buttons to play the game while you watch.
+
+# Supports
+- Gen1: Soon
+- Gen2: Soon
+- Gen3: Pretty much full support for Ruby/Sapphire, full support for Emerald 
 
 # Features
 - Directional Bias Mode
