@@ -5,11 +5,11 @@
 
 -- Made by Nyuuh 10/2022
 
-local versionHandler = require "version_handler"
-local filedataHandler = require "filedata_handler"
-local guiHandler = require "gui_handler"
-local inputHandler = require "input_handler"
-local helperFunctions = require "helper_functions"
+local versionHandler = require "Handlers\\version_handler"
+local filedataHandler = require "Handlers\\filedata_handler"
+local guiHandler = require "Handlers\\gui_handler"
+local inputHandler = require "Handlers\\input_handler"
+local helperFunctions = require "Handlers\\helper_functions"
 
 local gameVersion = -1
 local compatibleVersions = 3

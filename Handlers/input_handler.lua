@@ -68,9 +68,9 @@ function export.HandleInputs(mode, lastinputs)
     if rng < inp_RepeatChance and lastinputs ~= nil then
         return lastinputs
     else
-        if inp_Mode == 0 then return WalkModeInput() end
-        if inp_Mode == 1 then return ActModeInput() end
-        if inp_Mode == 2 then return BattleModeInput() end
+        if inp_Mode == 0 then return export.WalkModeInput() end
+        if inp_Mode == 1 then return export.ActModeInput() end
+        if inp_Mode == 2 then return export.BattleModeInput() end
     end
 end
 

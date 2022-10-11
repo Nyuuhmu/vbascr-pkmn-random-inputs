@@ -8,7 +8,7 @@ local export = {}
 
 -- save input count to file
 function export.SaveInputs(gameversion, playername, inputs)
-    local filename = ("InputCounts\\" .. string.lower(gameversion) .. "_" .. playername .. "_InputCount.txt")
+    local filename = ("Handlers\\InputCounts\\" .. string.lower(gameversion) .. "_" .. playername .. "_InputCount.txt")
 
     local file,err = io.open(filename, 'w')
     if file then
@@ -22,7 +22,7 @@ end
 function export.LoadInputs(gameversion, playername)
     vba.print("Loading Inputs...")
     local inputs
-    local filename = ("InputCounts\\" .. string.lower(gameversion) .. "_" .. playername .. "_InputCount.txt")
+    local filename = ("Handlers\\InputCounts\\" .. string.lower(gameversion) .. "_" .. playername .. "_InputCount.txt")
 
     local file,err = io.open(filename, 'r')
     if file then

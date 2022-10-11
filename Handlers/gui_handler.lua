@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-global
 local export = {}
 
-local helperFunctions = require "helper_functions"
+local helperFunctions = require "Handlers\\helper_functions"
 
 local specialRulesText = ""
 local savingAttemptProcessText = ""
