@@ -2,9 +2,11 @@
 A (vba-rr) generation specific Pokemon lua script which, essentially, presses (weighted) random buttons to play the game while you watch.
 
 # Supports
-- Gen1: Soon
-- Gen2: Soon
-- Gen3: Pretty much full support for Ruby/Sapphire, full support for Emerald 
+- Gen1: Supports Yellow
+- Gen2: Currently no support
+- Gen3: Supports Ruby, Sapphire and Emerald
+
+Heads up; Gen1 is currently missing a bunch of features that are present in Gen3.
 
 # Features
 - Directional Bias Mode
